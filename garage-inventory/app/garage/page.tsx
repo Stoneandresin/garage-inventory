@@ -2,11 +2,9 @@ import GarageCapture from '@/components/GarageCapture';
 
 export default async function GaragePage({ searchParams }: { searchParams: { q?: string } }) {
   async function fetchItems(query?: string) {
-    // Build an absolute URL. Vercel sets VERCEL_URL in production; fall back to localhost in dev.
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000';
-    const url = query
+   // baseUrl set to empty string so relative API calls work in all environments.
+   const baseUrl = '';
+ const url = query
       ? `${baseUrl}/api/items?q=${encodeURIComponent(query)}`
       : `${baseUrl}/api/items`;
     const res = await fetch(url, { cache: 'no-store' });
