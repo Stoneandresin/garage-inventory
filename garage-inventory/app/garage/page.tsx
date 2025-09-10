@@ -2,16 +2,26 @@ import GarageCapture from '@/components/GarageCapture';
 
 export default async function GaragePage({ searchParams }: { searchParams: { q?: string } }) {
   async function fetchItems(query?: string) {
-   // baseUrl set to empty string so relative API calls work in all environments.
-   const baseUrl = '';
- const url = query
+    // baseUrl set to empty string so relative API calls work in all environments.
+    const baseUrl = '';
+    const url = query
       ? `${baseUrl}/api/items?q=${encodeURIComponent(query)}`
       : `${baseUrl}/api/items`;
-    const res = await fetch(url, { cache: 'no-store' });
-    return res.json();
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) {
+        console.error('Failed to fetch items', res.status, res.statusText);
+        return { items: [] };
+      }
+      return res.json();
+    } catch (err) {
+      console.error('Error fetching items', err);
+      return { items: [] };
+    }
   }
 
   const data = await fetchItems(searchParams?.q);
+  const items = data.items ?? [];
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
@@ -29,7 +39,10 @@ export default async function GaragePage({ searchParams }: { searchParams: { q?:
           Search
         </button>
       </form>
-      {data.items?.map((it: any) => (
+      {items.length === 0 && (
+        <p className="text-gray-500">No items found.</p>
+      )}
+      {items.map((it: any) => (
         <div key={it.id} className="border p-2">
           <p className="font-semibold">{it.name}</p>
           <p className="text-sm text-gray-600">
