@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Scan</h1>
+<div id="camera-container">
+  <video id="preview" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
+</div>
+<div id="controls">
+  <button id="start">Start</button>
+  <button id="stop">Stop</button>
+  <label>
+    Preview detector
+    <select id="preview-detector">
+      <option value="none">Off</option>
+      <option value="tfjs">TFJS</option>
+    </select>
+  </label>
+</div>
+<div id="status"></div>
+<p class="hint">Preview boxes are indicative; server results are authoritative.</p>
+{% endblock %}
