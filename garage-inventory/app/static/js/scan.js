@@ -38,6 +38,9 @@
   const CHUNK_MS = 500; // 2 FPS baseline
   recorder.start(CHUNK_MS);
 
+  const INGEST_TOKEN = window.INGEST_TOKEN;
+  const headers = INGEST_TOKEN ? { Authorization: `Bearer ${INGEST_TOKEN}` } : {};
+
   const QUEUE_THRESHOLD = 5;
   let paused = false;
 
@@ -56,6 +59,7 @@
         const res = await fetch('/api/stream/ingest', {
           method: 'POST',
           body: chunk,
+          headers,
         });
         let data = {};
         try {
