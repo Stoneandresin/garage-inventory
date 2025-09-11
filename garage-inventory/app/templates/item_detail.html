@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ item.name }}</h1>
+<p>Category: {{ item.category or 'n/a' }}</p>
+<p>Zone: {{ item.zone or 'n/a' }}</p>
+<p>Quantity: {{ item.quantity }}</p>
+<p>Barcode: {{ item.barcode or 'n/a' }}</p>
+<p>{{ item.notes or '' }}</p>
+<h2>Detections</h2>
+<div class="detections">
+  {% for det in detections %}
+    {% if det.crop_path %}
+      <img src="{{ det.crop_path }}" alt="det" class="thumb"/>
+    {% else %}
+      <div>{{ det.label }} {{ '%.0f' % (det.confidence * 100) }}%</div>
+    {% endif %}
+  {% else %}
+    <p>No detections yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

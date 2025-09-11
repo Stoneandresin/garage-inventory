@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Inventory</h1>
+<form method="get">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search"/>
+  <button type="submit">Search</button>
+</form>
+<ul>
+{% for item in items %}
+  <li><a href="/items/{{ item.id }}">{{ item.name }}</a> ({{ item.quantity }})</li>
+{% else %}
+  <li>No items.</li>
+{% endfor %}
+</ul>
+{% endblock %}

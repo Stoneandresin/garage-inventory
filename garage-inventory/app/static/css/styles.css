@@ -1,0 +1,24 @@
+body { font-family: sans-serif; margin: 1rem; }
+#camera-container { position: relative; width: 100%; max-width: 480px; }
+video { width: 100%; display: block; background: #000; }
+#overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.hint { font-size: 0.8rem; color: #555; }
+
+/* simple card styling for review/inventory pages */
+.card {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+}
+.card img.thumb {
+  max-width: 100px;
+  display: block;
+  margin-bottom: 0.5rem;
+}
