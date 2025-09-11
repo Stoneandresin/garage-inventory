@@ -1,0 +1,6 @@
+{
+  "name": "Garage Inventory",
+  "short_name": "Inventory",
+  "start_url": "/",
+  "display": "standalone"
+}
