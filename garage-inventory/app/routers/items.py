@@ -20,19 +20,13 @@ page_router = APIRouter()
 
 
 @page_router.get("/inventory", response_class=HTMLResponse)
-def inventory_page(
-    request: Request,
-    q: Optional[str] = Query(None),
-    db: Session = Depends(get_db),
-):
+def inventory_page(request: Request, q: Optional[str] = Query(None), db: Session = Depends(get_db)):
     """Render inventory search page."""
     query = db.query(models.Item)
     if q:
         query = query.filter(models.Item.name.contains(q))
     items = query.all()
-    return TEMPLATES.TemplateResponse(
-        "inventory.html", {"request": request, "items": items, "q": q or ""}
-    )
+    return TEMPLATES.TemplateResponse("inventory.html", {"request": request, "items": items, "q": q or ""})
 
 
 @page_router.get("/items/{item_id}", response_class=HTMLResponse)
@@ -41,14 +35,8 @@ def item_detail(item_id: int, request: Request, db: Session = Depends(get_db)):
     item = db.get(models.Item, item_id)
     if not item:
         raise HTTPException(404)
-    detections = (
-        db.query(models.Detection)
-        .filter(models.Detection.item_id == item_id)
-        .all()
-    )
-    return TEMPLATES.TemplateResponse(
-        "item_detail.html", {"request": request, "item": item, "detections": detections}
-    )
+    detections = db.query(models.Detection).filter(models.Detection.item_id == item_id).all()
+    return TEMPLATES.TemplateResponse("item_detail.html", {"request": request, "item": item, "detections": detections})
 
 
 @api_router.get("/", response_model=List[schemas.ItemRead])
@@ -99,6 +87,22 @@ def update_item(item_id: int, item: schemas.ItemUpdate, db: Session = Depends(ge
     db.commit()
     db.refresh(db_item)
     return db_item
+
+
+@api_router.post("/{item_id}/merge")
+def merge_item(item_id: int, payload: schemas.ItemMerge, db: Session = Depends(get_db)):
+    """Merge another item into ``item_id``."""
+    if item_id == payload.source_id:
+        return {"ok": True}
+    target = db.get(models.Item, item_id)
+    source = db.get(models.Item, payload.source_id)
+    if not target or not source:
+        raise HTTPException(404, "item not found")
+    for det in source.detections:
+        det.item_id = item_id
+    db.delete(source)
+    db.commit()
+    return {"ok": True}
 
 
 @api_router.delete("/{item_id}")

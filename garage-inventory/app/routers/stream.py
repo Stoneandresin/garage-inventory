@@ -3,7 +3,10 @@ from typing import Dict
 import asyncio
 import uuid
 
-import cv2
+try:
+    import cv2
+except Exception:  # pragma: no cover - optional dependency
+    cv2 = None
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -58,11 +61,14 @@ async def ingest(
     detections = pipeline.process_image(dest)
 
     # load image size for normalization; fall back to 1x1 if image can't be parsed
-    img = cv2.imread(str(dest))
-    if img is None:
-        width = height = 1
+    if cv2 is not None:
+        img = cv2.imread(str(dest))
+        if img is None:
+            width = height = 1
+        else:
+            height, width = img.shape[:2]
     else:
-        height, width = img.shape[:2]
+        width = height = 1
 
     payload = []
     for i, det in enumerate(detections):

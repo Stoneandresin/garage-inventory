@@ -40,6 +40,11 @@ class ItemRead(ItemBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ItemMerge(BaseModel):
+    """Payload for merging another item into the target item."""
+    source_id: int
+
+
 class DetectionRead(BaseModel):
     """Minimal representation of a detection for review display."""
     id: int
