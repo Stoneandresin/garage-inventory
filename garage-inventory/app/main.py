@@ -7,14 +7,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .db import init_db
-from .routers import categories, items, settings, stream, zones
+from .routers import categories, items, settings, stream, zones, review
 
 init_db()
 
 app = FastAPI(title="Garage Inventory")
 
 app.include_router(stream.router)
-app.include_router(items.router)
+app.include_router(items.router)  # JSON API
+app.include_router(items.page_router)
+app.include_router(review.router)
+app.include_router(review.page_router)
 app.include_router(zones.router)
 app.include_router(categories.router)
 app.include_router(settings.router)

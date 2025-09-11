@@ -1,2 +1,11 @@
 {% extends "base.html" %}
-{% block content %}<h1>${name^}</h1>{% endblock %}
+{% block content %}
+<h1>Review</h1>
+<div id="proposed">
+  {% for item in items %}
+    {% include '_proposed_card.html' with context %}
+  {% else %}
+    <p>No detections to review.</p>
+  {% endfor %}
+</div>
+{% endblock %}

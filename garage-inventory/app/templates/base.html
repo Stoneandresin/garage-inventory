@@ -4,9 +4,11 @@
     <meta charset="utf-8">
     <title>Garage Inventory</title>
     <link rel="stylesheet" href="/static/css/styles.css">
-    <script src="/static/js/scan.js" defer></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10" crossorigin="anonymous"></script>
+    {% block head_scripts %}{% endblock %}
   </head>
   <body>
     {% block content %}{% endblock %}
+    {% block scripts %}{% endblock %}
   </body>
 </html>

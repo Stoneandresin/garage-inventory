@@ -1,0 +1,21 @@
+<div class="card" id="prop-{{ item.temp_id }}">
+  {% if item.crop_paths %}
+  <img src="{{ item.crop_paths[0] }}" alt="thumb" class="thumb"/>
+  {% endif %}
+  <div><strong>{{ item.name_guess }}</strong> {{ '%.0f' % (item.confidence * 100) }}%</div>
+  <form hx-post="/api/review/{{ session_id }}/accept" hx-target="#prop-{{ item.temp_id }}" hx-swap="outerHTML">
+    <input type="hidden" name="temp_id" value="{{ item.temp_id }}"/>
+    <input type="text" name="name" value="{{ item.name_guess }}"/>
+    <input type="text" name="category" value="{{ item.category_guess or '' }}"/>
+    <input type="text" name="zone" value="{{ item.zone_guess or '' }}"/>
+    <input type="number" name="quantity" value="1" min="1"/>
+    <textarea name="notes" placeholder="notes"></textarea>
+    <button type="submit">Accept</button>
+  </form>
+  <button hx-post="/api/review/{{ session_id }}/reject" hx-vals='{"temp_id":"{{ item.temp_id }}"}' hx-target="#prop-{{ item.temp_id }}" hx-swap="outerHTML">Reject</button>
+  <form hx-post="/api/review/{{ session_id }}/merge" hx-target="#prop-{{ item.temp_id }}" hx-swap="outerHTML">
+    <input type="hidden" name="temp_id" value="{{ item.temp_id }}"/>
+    <input type="number" name="target_item_id" placeholder="Item ID"/>
+    <button type="submit">Merge</button>
+  </form>
+</div>
