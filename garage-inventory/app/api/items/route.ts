@@ -9,7 +9,21 @@ import type { Item } from '@/lib/models';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get('q');
-  const limit = Number(searchParams.get('limit') || '50');
+
+  const rawLimit = searchParams.get('limit');
+  let limit = 50;
+  if (rawLimit !== null) {
+    const parsed = Number(rawLimit);
+    if (!Number.isFinite(parsed)) {
+      limit = 50;
+    } else {
+      const clamped = Math.min(Math.max(parsed, 1), 100);
+      if (clamped !== parsed) {
+        return NextResponse.json({ error: 'limit_out_of_range' }, { status: 400 });
+      }
+      limit = clamped;
+    }
+  }
   try {
     if (query) {
       const nameResults = await supabaseAdmin
