@@ -11,6 +11,11 @@ const CldUploadWidget = dynamic(() => import('next-cloudinary').then(m => m.CldU
   ssr: false,
 });
 
+interface DetectedItem {
+  name: string;
+  bbox?: { x: number; y: number; w: number; h: number };
+}
+
 /**
  * GarageCapture provides a button that opens a Cloudinary upload widget. On
  * successful upload, it posts the image URL to `/api/ingest` to trigger
@@ -20,12 +25,22 @@ export default function GarageCapture() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [photo, setPhoto] = useState<{ url: string; width: number; height: number } | null>(null);
-  const [items, setItems] = useState<
-    { name: string; bbox?: { x: number; y: number; w: number; h: number } }[]
-  >([]);
+  const [items, setItems] = useState<DetectedItem[]>([]);
   const ingestKey = process.env.NEXT_PUBLIC_INGEST_KEY ?? '';
+  const uploadPreset =
+    process.env.NEXT_PUBLIC_CLOUDINARY_PRESET ||
+    (process.env.CLOUDINARY_UPLOAD_PRESET as string | undefined);
+  if (!uploadPreset) {
+    throw new Error(
+      'Cloudinary upload preset is not configured. Set NEXT_PUBLIC_CLOUDINARY_PRESET or CLOUDINARY_UPLOAD_PRESET.'
+    );
+  }
 
   async function handleUpload(result: CloudinaryUploadWidgetResults) {
+    if (result.event !== 'success') {
+      setMessage(`Upload failed: ${result.event}`);
+      return;
+    }
     const info = result.info as CloudinaryUploadWidgetInfo;
     const { secure_url, width, height } = info;
     setBusy(true);
@@ -61,14 +76,7 @@ export default function GarageCapture() {
 
   return (
     <div className="space-y-3">
-      <CldUploadWidget
-        uploadPreset={
-          process.env.NEXT_PUBLIC_CLOUDINARY_PRESET ||
-          (process.env.CLOUDINARY_UPLOAD_PRESET as string | undefined) ||
-          '<YOUR_PRESET>'
-        }
-        onUpload={handleUpload}
-      >
+      <CldUploadWidget uploadPreset={uploadPreset} onUpload={handleUpload}>
         {({ open }) => (
           <button
             className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
