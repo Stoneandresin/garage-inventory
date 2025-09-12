@@ -1,6 +1,9 @@
 import GarageCapture from '@/components/GarageCapture';
 import { headers } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function GaragePage({ searchParams }: { searchParams: { q?: string } }) {
   async function fetchItems(query?: string) {
     const headersList = headers();
