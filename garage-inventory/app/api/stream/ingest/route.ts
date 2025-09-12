@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { validateAuth } from '@/lib/validateAuth';
 
 // Maximum accepted payload size (bytes). Reject anything larger upfront.
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -9,14 +10,8 @@ const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 // client and returns the current queue depth. For now, the chunks are simply
 // consumed and discarded.
 export async function POST(req: NextRequest) {
-  // Optional bearer token gate; reuse INGEST_TOKEN if set.
-  const expectedToken = process.env.INGEST_TOKEN;
-  if (expectedToken) {
-    const authHeader = req.headers.get('authorization') || '';
-    if (authHeader !== `Bearer ${expectedToken}`) {
-      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-    }
-  }
+  const unauthorized = validateAuth(req.headers);
+  if (unauthorized) return unauthorized;
 
   try {
     // Enforce payload size using Content-Length if provided.
