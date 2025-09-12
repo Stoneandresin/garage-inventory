@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
 
 // Simple streaming ingest endpoint. Accepts binary chunks uploaded from the
 // client and returns the current queue depth. For now, the chunks are simply
@@ -16,13 +20,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const supabase = getSupabaseAdmin();
     // Read the uploaded chunk into a buffer.
     const chunk = Buffer.from(await req.arrayBuffer());
 
     // Store the chunk in the `stream` storage bucket with a random name. The
     // bucket is expected to exist ahead of time.
     const fileName = `${randomUUID()}.webm`;
-    const { error: uploadErr } = await supabaseAdmin.storage
+    const { error: uploadErr } = await supabase.storage
       .from('stream')
       .upload(fileName, chunk, {
         contentType: 'video/webm',
@@ -33,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Count how many chunks currently exist to approximate queue depth.
-    const { data: files, error: listErr } = await supabaseAdmin.storage
+    const { data: files, error: listErr } = await supabase.storage
       .from('stream')
       .list();
     if (listErr) {

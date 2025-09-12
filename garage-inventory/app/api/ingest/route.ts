@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { CATEGORIES, Category } from '@/lib/taxonomy';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
 
 // Define the shape of a detected item returned from the vision model.
 interface DetectedItem {
@@ -22,12 +26,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const supabase = getSupabaseAdmin();
     const { imageUrl, publicId, width, height } = await req.json();
     if (!imageUrl) {
       return NextResponse.json({ error: 'imageUrl required' }, { status: 400 });
     }
     // Save the photo record
-    const { data: photo, error: photoErr } = await supabaseAdmin
+    const { data: photo, error: photoErr } = await supabase
       .from('photos')
       .insert({ url: imageUrl, width, height })
       .select()
@@ -40,7 +45,7 @@ export async function POST(req: NextRequest) {
     // Upsert each item and link it to the photo
     for (const it of items) {
       // See if an item with same name and category already exists
-      const { data: existing } = await supabaseAdmin
+      const { data: existing } = await supabase
         .from('items')
         .select('id')
         .eq('category', it.category)
@@ -49,7 +54,7 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
       let itemId = existing?.id as string | undefined;
       if (!itemId) {
-        const { data: created, error: createErr } = await supabaseAdmin
+        const { data: created, error: createErr } = await supabase
           .from('items')
           .insert({ name: it.name, category: it.category, confidence: it.confidence })
           .select()
@@ -58,7 +63,7 @@ export async function POST(req: NextRequest) {
         itemId = created.id;
       }
       // Link the item to the photo with its bounding box
-      await supabaseAdmin.from('item_photos').insert({
+      await supabase.from('item_photos').insert({
         item_id: itemId,
         photo_id: photo.id,
         bbox: it.bbox ?? null,
