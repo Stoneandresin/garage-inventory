@@ -164,8 +164,16 @@ function openSSE() {
   };
 }
 
+ codex/add-authorization-header-to-fetch-call-r50xnn
 // Cache for server detections, updated via SSE
 let serverDetections = [];
+
+  const INGEST_TOKEN = window.INGEST_TOKEN;
+  const headers = INGEST_TOKEN ? { Authorization: `Bearer ${INGEST_TOKEN}` } : {};
+
+  const QUEUE_THRESHOLD = 5;
+  let paused = false;
+     main
 
 // Optional preview model for dashed boxes
 let previewModel = null;
@@ -185,6 +193,7 @@ async function loadPreviewModel() {
 }
 loadPreviewModel();
 
+codex/add-authorization-header-to-fetch-call-r50xnn
 // Overlay loop: draw server boxes (solid) and preview boxes (dashed)
 async function overlayLoop() {
   const W = () => canvas.width;
@@ -241,6 +250,37 @@ async function overlayLoop() {
         ctx.fillRect(x, y - 18, textWidth + 8, 18);
         ctx.fillStyle = "#000";
         ctx.fillText(pLabel, x + 4, y - 4);
+=======
+  async function uploadLoop() {
+    while (true) {
+      if (chunks.length === 0) {
+        await sleep(50);
+        continue;
+      }
+      const chunk = chunks.shift();
+      try {
+        const res = await fetch('/api/stream/ingest', {
+          method: 'POST',
+          body: chunk,
+          headers,
+        });
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (err) {
+          // ignore JSON parse errors
+        }
+        const queued = typeof data.queued === 'number' ? data.queued : 0;
+        if (queued > QUEUE_THRESHOLD && !paused) {
+          recorder.pause();
+          paused = true;
+        } else if (queued <= QUEUE_THRESHOLD && paused) {
+          recorder.resume();
+          paused = false;
+        }
+      } catch (err) {
+        console.error('Failed to upload chunk', err);
+       main
       }
       ctx.restore();
     }
