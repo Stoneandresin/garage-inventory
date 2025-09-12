@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import { CldUploadWidget } from 'next-cloudinary';
+import dynamic from 'next/dynamic';
+
+const CldUploadWidget = dynamic(() => import('next-cloudinary').then(m => m.CldUploadWidget), {
+  ssr: false,
+});
 
 /**
  * GarageCapture provides a button that opens a Cloudinary upload widget. On
