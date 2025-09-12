@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { CATEGORIES, Category } from '@/lib/taxonomy';
+import { validateAuth } from '@/lib/validateAuth';
 
 // Define the shape of a detected item returned from the vision model.
 interface DetectedItem {
@@ -12,14 +13,8 @@ interface DetectedItem {
 
 // POST /api/ingest
 export async function POST(req: NextRequest) {
-  // Optional bearer token gate; if INGEST_TOKEN is set, clients must include it
-  const expectedToken = process.env.INGEST_TOKEN;
-  if (expectedToken) {
-    const authHeader = req.headers.get('authorization') || '';
-    if (authHeader !== `Bearer ${expectedToken}`) {
-      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-    }
-  }
+  const unauthorized = validateAuth(req.headers);
+  if (unauthorized) return unauthorized;
 
   try {
     const { imageUrl, width, height } = await req.json();
