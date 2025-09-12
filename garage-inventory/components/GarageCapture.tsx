@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
+import type {
+  CloudinaryUploadWidgetInfo,
+  CloudinaryUploadWidgetResults,
+} from 'next-cloudinary';
 
 const CldUploadWidget = dynamic(() => import('next-cloudinary').then(m => m.CldUploadWidget), {
   ssr: false,
@@ -15,12 +19,19 @@ const CldUploadWidget = dynamic(() => import('next-cloudinary').then(m => m.CldU
 export default function GarageCapture() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<{ url: string; width: number; height: number } | null>(null);
+  const [items, setItems] = useState<
+    { name: string; bbox?: { x: number; y: number; w: number; h: number } }[]
+  >([]);
   const ingestKey = process.env.NEXT_PUBLIC_INGEST_KEY ?? '';
 
-  async function handleUpload(result: any) {
-    const { secure_url, public_id, width, height } = result.info;
+  async function handleUpload(result: CloudinaryUploadWidgetResults) {
+    const info = result.info as CloudinaryUploadWidgetInfo;
+    const { secure_url, width, height } = info;
     setBusy(true);
     setMessage(null);
+    setPhoto({ url: secure_url, width, height });
+    setItems([]);
     try {
       const res = await fetch('/api/ingest', {
         method: 'POST',
@@ -28,19 +39,24 @@ export default function GarageCapture() {
           'Content-Type': 'application/json',
           ...(ingestKey ? { Authorization: `Bearer ${ingestKey}` } : {}),
         },
-        body: JSON.stringify({ imageUrl: secure_url, publicId: public_id, width, height }),
+        body: JSON.stringify({ imageUrl: secure_url, width, height }),
       });
       const json = await res.json();
-      if (json.ok) {
-        setMessage(`Detected ${json.detected} item${json.detected === 1 ? '' : 's'}.`);
-      } else {
-        setMessage(`Error: ${json.error ?? 'Unknown error'}`);
+      if (!res.ok || !json.ok) {
+        setMessage(`Error: ${json.error ?? res.statusText}`);
+        return;
       }
+      setMessage(`Detected ${json.detected} item${json.detected === 1 ? '' : 's'}.`);
+      setItems(json.items ?? []);
     } catch (err: any) {
       setMessage(`Error: ${err.message ?? err.toString()}`);
     } finally {
       setBusy(false);
     }
+  }
+
+  function updateItemName(index: number, name: string) {
+    setItems((prev) => prev.map((it, i) => (i === index ? { ...it, name } : it)));
   }
 
   return (
@@ -65,6 +81,39 @@ export default function GarageCapture() {
       </CldUploadWidget>
       {busy && <p className="text-sm">Analyzing…</p>}
       {message && <p className="text-sm">{message}</p>}
+      {photo && (
+        <div
+          className="relative inline-block"
+          style={{ width: photo.width, height: photo.height }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photo.url} alt="Uploaded" width={photo.width} height={photo.height} />
+          {items.map((it, idx) => {
+            const box = it.bbox;
+            if (!box) return null;
+            const style = {
+              left: `${box.x * photo.width}px`,
+              top: `${box.y * photo.height}px`,
+              width: `${box.w * photo.width}px`,
+              height: `${box.h * photo.height}px`,
+            } as CSSProperties;
+            return (
+              <div
+                key={idx}
+                className="absolute border-2 border-red-500"
+                style={style}
+              >
+                <input
+                  className="absolute -top-6 left-0 bg-white text-xs"
+                  value={it.name}
+                  onChange={(e) => updateItemName(idx, e.target.value)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
+
