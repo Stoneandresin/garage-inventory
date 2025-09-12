@@ -59,21 +59,12 @@ export async function POST(req: NextRequest) {
       throw new Error(uploadErr.message);
     }
 
-    // Increment and return queue depth without listing the bucket.
-    const { data: meta, error: metaErr } = await supabaseAdmin
-      .from('stream_queue')
-      .select('count')
-      .eq('id', 'stream')
-      .single();
-    let queued = (meta?.count ?? 0) + 1;
-    const { error: upsertErr } = await supabaseAdmin
-      .from('stream_queue')
-      .upsert({ id: 'stream', count: queued });
-    if (metaErr && metaErr.code !== 'PGRST116') {
-      throw new Error(metaErr.message);
-    }
-    if (upsertErr) {
-      throw new Error(upsertErr.message);
+    // Atomically increment the queue depth and return the updated value.
+    // This avoids race conditions from concurrent uploads.
+    const { data: queued, error: incErr } = await supabaseAdmin
+      .rpc('increment_stream_queue', { id: 'stream' });
+    if (incErr) {
+      throw new Error(incErr.message);
     }
 
     return NextResponse.json({ queued });
