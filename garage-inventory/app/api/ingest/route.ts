@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { imageUrl, publicId, width, height } = await req.json();
+    const { imageUrl, width, height } = await req.json();
     if (!imageUrl) {
       return NextResponse.json({ error: 'imageUrl required' }, { status: 400 });
     }
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         bbox: it.bbox ?? null,
       });
     }
-    return NextResponse.json({ ok: true, detected: items.length });
+    return NextResponse.json({ ok: true, detected: items.length, items });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'ingest_failed' }, { status: 500 });
   }
