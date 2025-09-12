@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import { CldUploadWidget } from 'next-cloudinary';
+import dynamic from 'next/dynamic';
+
+const CldUploadWidget = dynamic(() => import('next-cloudinary').then(m => m.CldUploadWidget), {
+  ssr: false,
+});
 
 /**
  * GarageCapture provides a button that opens a Cloudinary upload widget. On
@@ -11,6 +15,7 @@ import { CldUploadWidget } from 'next-cloudinary';
 export default function GarageCapture() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const ingestKey = process.env.NEXT_PUBLIC_INGEST_KEY ?? '';
 
   async function handleUpload(result: any) {
     const { secure_url, public_id, width, height } = result.info;
@@ -21,9 +26,7 @@ export default function GarageCapture() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(process.env.NEXT_PUBLIC_INGEST_KEY
-            ? { Authorization: `Bearer ${process.env.NEXT_PUBLIC_INGEST_KEY}` }
-            : {}),
+          ...(ingestKey ? { Authorization: `Bearer ${ingestKey}` } : {}),
         },
         body: JSON.stringify({ imageUrl: secure_url, publicId: public_id, width, height }),
       });

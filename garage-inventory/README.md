@@ -118,6 +118,24 @@ This project is a minimal web application for cataloguing items in a garage or s
 
 Deploy this app to Vercel and add the environment variables from `.env.local` in the Vercel project settings. The endpoints under `/api` work with the default Server Actions in Next.js 14. For production, ensure you include a secure `INGEST_TOKEN` and provide it in the `Authorization` header when calling `/api/ingest` from the client.
 
+## Environment variables on Vercel
+
+Copy `.env.example` to `.env.local` for local development. In Vercel, define these variables in **Project Settings → Environment Variables**. Public variables are exposed to the browser, while server variables remain private.
+
+**Public**
+
+- `NEXT_PUBLIC_CLOUDINARY_PRESET`
+- `NEXT_PUBLIC_INGEST_KEY` (optional)
+
+**Server**
+
+- `INGEST_TOKEN`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_KEY`
+- `OPENAI_API_KEY`
+
+The app falls back gracefully when optional variables are missing, but required server variables must be set for successful deployments.
+
 ## Contributing
 
 Pull requests and improvements are welcome! If you add new item categories or features (like QR code labelling, SMS alerts, or a mobile wrapper), please document the changes and update the instructions accordingly.
