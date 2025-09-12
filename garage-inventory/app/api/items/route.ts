@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import type { Item } from '@/lib/models';
 
 // GET /api/items
 // Supports optional `q` query for fuzzy search and optional `limit` to restrict
@@ -21,17 +22,20 @@ export async function GET(req: NextRequest) {
         .select('item_id,alias')
         .ilike('alias', `%${query}%`)
         .limit(limit);
-      const aliasIds = (aliasResults.data || []).map((a: any) => a.item_id);
+      type Alias = { item_id: string; alias: string };
+      const aliasIds = (aliasResults.data || []).map((a: Alias) => a.item_id);
       const aliasItems = aliasIds.length
         ? await supabaseAdmin
             .from('items')
             .select('id,name,category,confidence')
             .in('id', aliasIds)
             .limit(limit)
-        : { data: [] as any[] };
-      const dedup = new Map<string, any>();
-      (nameResults.data || []).forEach((r: any) => dedup.set(r.id, r));
-      (aliasItems.data || []).forEach((r: any) => dedup.set(r.id, r));
+        : { data: [] as Item[] };
+      const nameItems: Item[] = (nameResults.data ?? []) as Item[];
+      const aliasItemsData: Item[] = (aliasItems.data ?? []) as Item[];
+      const dedup = new Map<string, Item>();
+      nameItems.forEach((r) => dedup.set(r.id, r));
+      aliasItemsData.forEach((r) => dedup.set(r.id, r));
       return NextResponse.json({ items: Array.from(dedup.values()).slice(0, limit) });
     }
     // No query; return recent items
@@ -41,7 +45,7 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error) throw new Error(error.message);
-    return NextResponse.json({ items: data });
+    return NextResponse.json({ items: (data ?? []) as Item[] });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'items_fetch_failed' }, { status: 500 });
   }
