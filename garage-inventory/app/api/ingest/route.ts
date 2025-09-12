@@ -32,35 +32,59 @@ export async function POST(req: NextRequest) {
     }
     // Detect items via the vision model
     const items = await detectItems(imageUrl);
-    // Upsert each item and link it to the photo
-    for (const it of items) {
-      // See if an item with same name and category already exists
-      const { data: existing } = await supabaseAdmin
-        .from('items')
-        .select('id')
-        .eq('category', it.category)
-        .ilike('name', it.name)
-        .limit(1)
-        .maybeSingle();
-      let itemId = existing?.id as string | undefined;
-      if (!itemId) {
-        const { data: created, error: createErr } = await supabaseAdmin
+
+    const processItems = async (tx: typeof supabaseAdmin) => {
+      for (const it of items) {
+        const { data: existing, error: existingErr } = await tx
           .from('items')
-          .insert({ name: it.name, category: it.category, confidence: it.confidence })
-          .select()
-          .single();
-        if (createErr) continue;
-        itemId = created.id;
+          .select('id')
+          .eq('category', it.category)
+          .ilike('name', it.name)
+          .limit(1)
+          .maybeSingle();
+        if (existingErr) {
+          console.error('Failed to query item', existingErr);
+          throw existingErr;
+        }
+        let itemId = existing?.id as string | undefined;
+        if (!itemId) {
+          const { data: created, error: createErr } = await tx
+            .from('items')
+            .insert({ name: it.name, category: it.category, confidence: it.confidence })
+            .select()
+            .single();
+          if (createErr) {
+            console.error('Failed to create item', createErr);
+            throw createErr;
+          }
+          itemId = created.id;
+        }
+        const { error: linkErr } = await tx.from('item_photos').insert({
+          item_id: itemId,
+          photo_id: photo.id,
+          bbox: it.bbox ?? null,
+        });
+        if (linkErr) {
+          console.error('Failed to link item to photo', linkErr);
+          throw linkErr;
+        }
       }
-      // Link the item to the photo with its bounding box
-      await supabaseAdmin.from('item_photos').insert({
-        item_id: itemId,
-        photo_id: photo.id,
-        bbox: it.bbox ?? null,
-      });
+    };
+
+    const client = supabaseAdmin as any;
+    if (typeof client.transaction === 'function') {
+      const { error: txError } = await client.transaction(processItems);
+      if (txError) {
+        console.error('Transaction failed', txError);
+        throw txError;
+      }
+    } else {
+      await processItems(supabaseAdmin);
     }
+
     return NextResponse.json({ ok: true, detected: items.length, items });
   } catch (err: any) {
+    console.error('Ingest error', err);
     return NextResponse.json({ error: err.message || 'ingest_failed' }, { status: 500 });
   }
 }
