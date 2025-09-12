@@ -10,6 +10,7 @@ let recorder;
 let sessionId;
 let sse;
 let chunks = [];
+let uploadInterval;
 
 const video = document.getElementById("preview");
 const canvas = document.getElementById("overlay");
@@ -78,7 +79,7 @@ async function startScan() {
     };
     recorder.start(2000); // 2 s chunks
     // Periodically upload chunks
-    setInterval(uploadChunks, 2000);
+    uploadInterval = setInterval(uploadChunks, 2000);
   } catch (e) {
     console.warn("MediaRecorder not available; falling back to snapshot mode", e);
     snapshotLoop();
@@ -258,6 +259,10 @@ async function stopScan() {
   if (mediaStream) {
     mediaStream.getTracks().forEach((t) => t.stop());
   }
+  if (uploadInterval) {
+    clearInterval(uploadInterval);
+    uploadInterval = null;
+  }
   // Close SSE
   if (sse) sse.close();
   // Notify server to stop session
@@ -269,6 +274,7 @@ async function stopScan() {
   // Reset session state
   sessionId = null;
   serverDetections = [];
+  chunks = [];
 }
 
 // Hook up UI buttons
