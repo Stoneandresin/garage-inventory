@@ -11,8 +11,13 @@ export default async function GaragePage({ searchParams }: { searchParams: { q?:
     const url = query
       ? `${baseUrl}/api/items?q=${encodeURIComponent(query)}`
       : `${baseUrl}/api/items`;
+    // Grab the protection cookie and forward it
+    const cookie = headersList.get('cookie') ?? '';
     try {
-      const res = await fetch(url, { cache: 'no-store' });
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: { cookie },
+      });
       if (!res.ok) {
         console.error('Failed to fetch items', res.status, res.statusText);
         return { items: [] };
