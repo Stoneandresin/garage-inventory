@@ -1,5 +1,6 @@
 import React from 'react';
 import '../lib/checkEnv';
+import './globals.css';
 
 export const metadata = {
   title: "Garage Inventory",
